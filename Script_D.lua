@@ -1,26 +1,18 @@
--- Auto CP Teleporter (Executor Client) versi FINAL FIXED FULL
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
--- ========================
--- Konfigurasi CP
--- ========================
 local CPs = {
-    {pos = Vector3.new(-621.72, 250.20, -383.89), expect = 1, wait_here = true},  -- CP1
-    {pos = Vector3.new(-1203.19, 261.56, -487.08), expect = 2, wait_here = true}, -- CP2
-    {pos = Vector3.new(-1399.29, 578.31, -949.93), expect = 3, wait_here = true}, -- CP3
-    {pos = Vector3.new(-1701.05, 816.51, -1399.99), expect = 4, wait_here = true},-- CP4
-    {pos = Vector3.new(-1971.53, 841.99, -1671.81), expect = 5, wait_here = false, delay = 5}, -- CP5 delay 5s
-    {pos = Vector3.new(-3231.311, 1718.793, -2590.812), expect = 5, wait_here = true, auto_die = true},-- CP6
+    {pos = Vector3.new(-621.72, 250.20, -383.89), expect = 1, wait_here = true},
+    {pos = Vector3.new(-1203.19, 261.56, -487.08), expect = 2, wait_here = true},
+    {pos = Vector3.new(-1399.29, 578.31, -949.93), expect = 3, wait_here = true},
+    {pos = Vector3.new(-1701.05, 816.51, -1399.99), expect = 4, wait_here = true},
+    {pos = Vector3.new(-1971.53, 841.99, -1671.81), expect = 5, wait_here = false, delay = 5},
+    {pos = Vector3.new(-3231.311, 1718.793, -2590.812), expect = 5, wait_here = true, auto_die = true},
 }
 
--- ========================
--- RemoteEvent notif
--- ========================
 local REMOTE_NAME = "ShowShelterNotification"
 local notifEvent = ReplicatedStorage:FindFirstChild(REMOTE_NAME, true)
-
 if not notifEvent then
     for _, inst in ipairs(game:GetDescendants()) do
         if inst:IsA("RemoteEvent") and inst.Name:lower():find("shelter") and inst.Name:lower():find("notif") then
@@ -30,7 +22,7 @@ if not notifEvent then
     end
 end
 
-local seen = {} -- notif yang sudah diterima
+local seen = {}
 local lastNotifId = nil
 
 if notifEvent then
@@ -50,14 +42,10 @@ if notifEvent then
         if num then
             lastNotifId = num
             seen[num] = true
-            print("[ShowShelterNotification] ->", num)
         end
     end)
 end
 
--- ========================
--- Helper
--- ========================
 local function getChar()
     local c = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     if not c:FindFirstChild("Humanoid") then c:WaitForChild("Humanoid") end
@@ -79,9 +67,6 @@ local function safeTeleport(targetPos)
     hrp.CFrame = CFrame.new(targetPos + Vector3.new(0,5,0))
 end
 
--- ========================
--- Main Loop
--- ========================
 local running = false
 
 local function runCycle()
@@ -91,43 +76,25 @@ local function runCycle()
         while currentCP <= #CPs do
             if not running then break end
             local cp = CPs[currentCP]
-
-            print(("[Teleporter] Ke CP%d ..."):format(currentCP))
             safeTeleport(cp.pos)
-
-            -- delay CP5
-            if cp.delay then
-                print(("[Teleporter] Delay %d detik di CP%d ..."):format(cp.delay, currentCP))
-                task.wait(cp.delay)
-            end
-
-            -- tunggu notif jika ada
+            if cp.delay then task.wait(cp.delay) end
             if cp.wait_here then
                 while not seen[cp.expect] do
                     local hrp, hum = getHRP()
-                    -- jika player mati, tunggu respawn & teleport ulang
                     if not hum or hum.Health <= 0 then
-                        print(("[Teleporter] Player mati saat menunggu notif %d, respawn & lanjut..."):format(cp.expect))
                         LocalPlayer.CharacterAdded:Wait()
                         safeTeleport(cp.pos)
                     end
                     task.wait(0.1)
                 end
             end
-
-            -- CP6 auto-die
             if cp.auto_die then
                 local hrp, hum = getHRP()
-                if hum and hum.Health > 0 then
-                    print("[Teleporter] CP6 notif diterima → Auto die & restart loop...")
-                    hum.Health = 0
-                end
-                -- tunggu respawn sebelum reset loop
+                if hum and hum.Health > 0 then hum.Health = 0 end
                 LocalPlayer.CharacterAdded:Wait()
-                -- reset semua notif, mulai dari CP1
                 seen = {}
                 currentCP = 1
-                break -- keluar loop CP, mulai dari CP1
+                break
             else
                 currentCP = currentCP + 1
             end
@@ -135,9 +102,6 @@ local function runCycle()
     end
 end
 
--- ========================
--- UI Start/Stop
--- ========================
 local gui = Instance.new("ScreenGui")
 gui.Name = "CP_Teleporter_UI"
 gui.ResetOnSpawn = false
@@ -207,7 +171,6 @@ stopBtn.MouseButton1Click:Connect(function()
     status.Text = "Status: Stopped"
 end)
 
--- drag sederhana
 local dragging, dragStart, startPos
 frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
